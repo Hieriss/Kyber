@@ -1,0 +1,38 @@
+# Collects inspiration from https://github.com/itzmeanjan/dilithium/blob/15c2280f9448b3631a571ee2f33f8b0c695d4788/.github/workflows/test_ci.yml
+name: Test SHA3 Hash and Extendable Output Functions
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build-on-nix:
+    runs-on: ${{matrix.os}}
+    strategy:
+      matrix:
+        # From https://github.com/actions/runner-images#available-images
+        os: [ubuntu-latest, macos-latest, flyci-macos-large-latest-m1, flyci-macos-large-latest-m2]
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup Google-Test
+      run: |
+        pushd ~
+        git clone https://github.com/google/googletest.git -b v1.14.0
+        pushd googletest
+        mkdir build
+        pushd build
+        cmake .. -DBUILD_GMOCK=OFF
+        make
+        sudo make install
+        popd
+        popd
+        popd
+    - name: Execute Tests on ${{matrix.os}}
+      run: make -j
+    - name: Execute Tests with AddressSanitizer on ${{matrix.os}}
+      run: make asan_test -j
+    - name: Execute Tests with UndefinedBehaviourSanitizer on ${{matrix.os}}
+      run: make ubsan_test -j
